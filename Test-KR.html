@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KR JangAn 200L HDPE Drum PN Selector</title>
+
+<style>
+body{font-family:Segoe UI;background:#eef3f8;margin:0;}
+.header{background:#002B5C;color:#fff;padding:15px 20px;font-weight:bold;}
+.container{max-width:1150px;margin:25px auto;display:flex;gap:25px;align-items: flex-start;}
+.card{flex:1;background:#fff;padding:25px;border-radius:10px;
+box-shadow:0 6px 18px rgba(0,0,0,0.08);}
+  
+/* ✅ 專門固定右側 Result */
+.container .card:last-child{
+  position: sticky;
+  top: 20px;   /* 距離頂部 */
+}
+
+.row{margin-bottom:15px;}
+label{font-weight:600;margin-bottom:6px;display:block;}
+select{width:100%;padding:8px;border-radius:5px;border:1px solid #ccc;}
+.output{font-size:20px;font-weight:bold;}
+.status.valid{color:green;}
+.status.warn{color:orange;}
+.status.invalid{color:red;}
+/* ✅ 手機版 */
+@media (max-width: 768px){
+
+  /* Layout */
+  .container{
+    flex-direction: column;
+    margin: 10px;
+  }
+
+  /* Card base */
+  .card{
+    padding: 15px;
+  }
+
+  /* ✅ RESULT CARD（關鍵修正） */
+  .container .card:last-child{
+
+    bottom: 0px;          /* ✅ 一定要 0 */
+    left: 10px;
+    right: 10px;
+
+    z-index: 1000;
+
+    padding: 12px 48px;
+    border-radius: 12px;
+
+    max-height: 40vh;
+    overflow-y: auto;
+
+    background: rgba(255,255,255,0.98);
+    box-shadow: 0 -4px 15px rgba(0,0,0,0.15);
+  }
+
+  /* ✅ 超重要：避免被遮住 */
+  body{
+    font-size:16px;
+    padding-bottom: 45vh;
+  }
+
+  /* 表單優化 */
+  select{
+    font-size:16px;
+    padding:12px;
+  }
+
+  label{
+    margin-bottom:4px;
+  }
+
+  .row{
+    margin-bottom:18px;
+  }
+
+  button{
+    width:100%;
+    padding:12px;
+    font-size:16px;
+  }
+
+  .output{
+    font-size:18px;
+  }
+
+  .header{
+    font-size:18px;
+  }
+}
+
+/* Drum explanation image */
+.drum-image{
+  margin-top:20px;
+  text-align:center;
+}
+
+.drum-image img{
+  width:100%;
+  max-width:450px;
+  height:auto;
+  border-radius:8px;
+}
+
+@media (max-width:768px){
+  .drum-image img{
+    max-width:100%;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">KR JangAn 200L HDPE Drum Part Number Selector</div>
+
+<div class="container">
+<div class="card">
+<h3>Specification</h3>
+<div id="selector"></div>
+</div>
+
+<div class="card">
+  <h3>Result</h3>
+
+  <div id="output" class="output">-</div>
+
+  <div id="status"></div>
+
+  <div id="drumSpec"
+       style="margin-top:10px;font-size:14px;line-height:1.6;">
+  </div>
+
+  <button onclick="copyPN()">Copy Part Number</button>
+
+  <div id="toolSpec"
+       style="margin-top:10px;font-size:14px;color:#006600;font-weight:600;">
+  </div>
+
+  <!-- Drum Explanation Image -->
+  <div class="drum-image">
+    <img src="Drum_explanation_KR.png">
+</div>
+
+</div>
+
+<script>
+
+let state = {
+  S0:'', B0:'', B1:'',
+  C0:'', C1:'', C2:'',
+  O0:'', O1:'', O2:'', O3:'', O4:''
+};
+
+
+/* ================= 基本 ================= */
+
+const toolMap = {
+  'NONE': '01-034684 (For 2" bung plug)',
+  'SLQC': '01-034684 (For 2" SLQC)',
+  'QCII': '153-366-2 (For QCII drum insert) & 01-034684 (For 2" bung plug)',
+  'QCIII': '01-030940 (For QCIII drum insert) & 01-034684 (For 2" bung plug)'
+};
+
+const basePackage = [
+['','-- Select --'],
+['K1','K1- Trilayer / Light blue (Standard size)'],
+['K7','K7- Advantage / Dark blue (Standard size)'],
+['K2','K2- Trilayer / Light blue (Asia/Pacific size)'],
+['K8','K8- Advantage / Dark blue (Asia/Pacific size)']
+];
+
+/* ===== Section B ===== */
+
+const B_material_std = [
+['','-- Select --'],
+['POE','D-POE O-rings'],
+['EPDM','EPDM O-rings'],
+['FKM','FKM O-rings']
+];
+
+const B_weep = [
+['','-- Select --'],
+['N','No weep holes'],
+['Y','With weep holes in top chime']
+];
+
+function getSectionB(){
+
+let m = val('B0');
+let w = val('B1');
+
+if(!m || !w) return null;
+
+if(m==='EPDM' && w==='N') return '1';
+if(m==='FKM'  && w==='N') return '2';
+if(m==='EPDM' && w==='Y') return '4';
+if(m==='FKM'  && w==='Y') return '5';
+if(m==='POE'  && w==='N') return 'A';
+if(m==='POE'  && w==='Y') return 'B';
+
+return null;
+
+}
+
+/* ===== Section C ===== */
+
+const series = [
+['','-- Select --'],
+['NONE','No drum insert'],
+['QCII','QCII'],
+['QCIII','QCIII'],
+['SLQC','SLQC']
+];
+
+const types = {
+QCII:[
+['DIT','DIT PFA QCII'],
+['DIP','DIP PE QCII']
+],
+QCIII:[
+['DI3T-3','DI3T- PFA QCIII 3-port'],
+['DI3T-4','DI3T- PFA QCIII 4-port'],
+['DT3P-3','DT3P- PE QCIII 3-port'],
+['DT3P-4','DT3P- PE QCIII 4-port']
+],
+SLQC:[
+['SLQC','SLQC with dispense downtube and vent closure'],
+['SLQC_VP','SLQC with standard 2" plug on vent side'],
+['SLQC_VV','SLQC with standard 2" vented plug on vent side'],
+['SLQC_VC','SLQC with custom vent side plug'],
+]
+};
+
+const orings = [
+['','-- Select --'],
+['SIL','FEP-encapsulated Silicone o-ring'],
+['FKM','FEP-encapsulated FKM o-ring'],
+['EPDM','FEP-encapsulated EPDM o-ring']
+];
+
+function getSectionC(){
+
+let s = val('C0');
+let t = val('C1');
+let o = val('C2');
+
+if(s==='NONE') return '01';
+if(!s || !t || !o) return null;
+
+if(s==='QCII'){
+if(t==='DIT'){
+if(o==='SIL') return '03';
+if(o==='FKM') return '04';
+if(o==='EPDM') return '05';
+}
+if(t==='DIP'){
+if(o==='SIL') return '06';
+if(o==='FKM') return '07';
+if(o==='EPDM') return '08';
+}
+}
+
+if(s==='QCIII'){
+if(t==='DI3T-3'){
+if(o==='SIL') return '11';
+if(o==='FKM') return '12';
+if(o==='EPDM') return '13';
+}
+if(t==='DI3T-4'){
+if(o==='SIL') return '14';
+if(o==='FKM') return '15';
+if(o==='EPDM') return '16';
+}
+if(t==='DT3P-3'){
+if(o==='SIL') return '17';
+if(o==='FKM') return '18';
+if(o==='EPDM') return '19';
+}
+if(t==='DT3P-4'){
+if(o==='SIL') return '20';
+if(o==='FKM') return '21';
+if(o==='EPDM') return '22';
+}
+}
+
+if(s==='SLQC'){
+if(t==='SLQC') return '09';
+if(t==='SLQC_VP') return '50';
+if(t==='SLQC_VV') return '51';
+if(t==='SLQC_VC') return '55';
+}
+
+return null;
+}
+
+/* ================= Other ================= */
+
+const shippingCapStd = [
+    ['','-- Select --'],
+    ['0','Standard'],
+    ['3','Manual relief shipping cap'],
+    ['6','Vented shipping cap on DI']
+];
+
+const shippingCapQCII = [
+    ['','-- Select --'],
+    ['0','Standard'],
+    ['3','Manual relief shipping cap'],
+    ['6','Vented shipping cap on DI'],
+    ['4','No 1/8" downtube (QCII only)'],
+    ['5','1/8" port plugged (QCII only)']
+];
+
+const others = [
+
+["Chemical keycode",[
+['','-- Select --'],
+['00','00-N/A'],
+['01','01-Nitric acid / Red'],
+['02','02-Sulfuric acid / Yellow'],
+['03','03-Ammonia / Green'],
+['04','04-Acetic acid / Brown'],
+['05','05-Hydrochloric acid / Blue'],
+['06','06-Hydrofluoric aicd'],
+['07','07-Ammonium fluoride'],
+['08','08-Phosphoric acid'],
+['09','09-Hydrogen peroxide'],
+['10','10-Acetone'],
+['11','11-Methanol'],
+['12','12-Methyl isobutyl ketone'],
+['13','13-Isopropyl alcohol'],
+['99','99-Uncoded'],
+['XX','Contact Entegris']
+]],
+
+["Special instructions",[
+['','-- Select --'],
+['0','Standard'],
+['3','No serial tag (QCIII only)']
+]],
+
+["Shipping cap options",[
+['','-- Select --'],
+['0','Standard'],
+['3','Manual relief shipping cap'],
+['6','Vented shipping cap on DI']
+]],
+
+["Manufacturing options",[
+['','-- Select --'],
+['0','No Analytical data required'],
+['1','Line"1" Production only'],
+['2','Line"2" Production only'],
+['A','Particle and metal data required'],
+['P','Hot stamp "POISON"']
+]],
+
+["Assembly speical options",[
+['','-- Select --'],
+['0','Standard'],
+['6','Vented plug in return side'],
+['K','Both sump and return are loose and taped only']
+]]
+
+];
+
+
+/* ================= UI ================= */
+
+function render(){
+let html='';
+
+html+=row('S0','Base package');
+html+=row('B0','O-ring for bung');
+html+=row('B1','Weep hole options');
+
+html+=row('C0','Drum insert series');
+html+=row('C1','Drum insert type');
+html+=row('C2','O-ring for shipping cap');
+
+others.forEach((d,i)=>html+=row(`O${i}`,d[0]));
+
+document.getElementById('selector').innerHTML=html;
+
+fill('S0',basePackage);
+fill('B0',B_material_std);
+fill('B1',B_weep);
+fill('C0',series);
+fill('C2',orings);
+others.forEach((d,i)=>fill(`O${i}`,d[1]));
+
+update();
+}
+
+function row(id,label){
+return `
+<div class="row" id="row_${id}">
+<label>${label}</label>
+<select id="${id}"></select>
+</div>
+`;
+}
+
+function fill(id,opts){
+let s=document.getElementById(id);
+let current=s.value;
+s.innerHTML='';
+opts.forEach(o=>{
+let op=document.createElement('option');
+op.value=o[0];
+op.text=o[1];
+s.appendChild(op);
+});
+if(current){
+for(let i=0;i<s.options.length;i++){
+if(s.options[i].value===current){
+s.selectedIndex=i; break;
+}
+}
+}
+}
+
+function val(id){
+return document.getElementById(id)?.value;
+}
+
+/* ================= update ================= */
+
+function update(){
+
+  let s = val('C0');
+  let t = val('C1');
+
+  let base = val('S0');
+
+
+/* ================= Type ================= */
+
+let typeSelect = document.getElementById('C1');
+
+let skip = (s === 'NONE');
+
+if(!s || skip){
+
+    typeSelect.disabled = true;
+
+    fill('C1',[
+        ['','-- Select --']
+    ]);
+
+}
+else{
+
+    typeSelect.disabled = false;
+
+    let expectedLength =
+        (types[s] ? types[s].length : 0) + 1;
+
+    if(typeSelect.options.length !== expectedLength){
+
+        fill('C1',[
+            ['','-- Select --'],
+            ...types[s]
+        ]);
+    }
+
+}
+
+/* ================= O-ring ================= */
+
+let oSelect = document.getElementById('C2');
+
+if(s === 'SLQC'){
+
+    fill('C2',[
+      ['NONE','None']
+    ]);
+
+    oSelect.value = 'NONE';
+    oSelect.disabled = true;
+
+}
+else{
+
+    let current = oSelect.value;
+
+    fill('C2', orings);
+
+    if(
+      current &&
+      current !== 'NONE'
+    ){
+        oSelect.value = current;
+    }
+
+    oSelect.disabled = !t || skip;
+
+}
+
+/* ================= Chemical ================= */
+
+let chemSelect = document.getElementById('O0');
+
+if(s === 'SLQC'){
+
+    chemSelect.value = '00';
+    chemSelect.disabled = true;
+
+}
+else{
+
+    chemSelect.disabled = skip;
+
+    /* QCII / QCIII 不允許 00 */
+
+    let hide00 =
+        (s === 'QCII' || s === 'QCIII');
+
+    for(let i=0;i<chemSelect.options.length;i++){
+
+        if(chemSelect.options[i].value === '00'){
+
+            chemSelect.options[i].hidden = hide00;
+
+        }
+
+    }
+
+    if(
+        hide00 &&
+        chemSelect.value === '00'
+    ){
+        chemSelect.value = '';
+    }
+
+}
+
+/* ================= Shipping cap ================= */
+
+let shipCap = document.getElementById('O2');
+
+if(s === 'QCII'){
+
+    fill('O2', shippingCapQCII);
+
+}
+else{
+
+    fill('O2', shippingCapStd);
+
+    if(shipCap.value === '4' ||
+       shipCap.value === '5'){
+
+        shipCap.value = '0';
+
+    }
+
+}
+
+if(skip){
+
+    shipCap.disabled = true;
+    shipCap.value = '0';
+
+}
+else{
+
+    shipCap.disabled = false;
+
+}
+
+/* ================= Special ================= */
+
+let special = document.getElementById('O1');
+
+if(skip){
+
+    fill('O1',[
+        ['0','Standard']
+    ]);
+
+    special.value = '0';
+    special.disabled = true;
+
+}
+else if(s === 'QCIII'){
+
+    fill('O1',[
+        ['0','Standard'],
+        ['3','No serial tag (QCIII only)']
+    ]);
+
+    special.disabled = false;
+
+}
+else{
+
+    fill('O1',[
+        ['0','Standard']
+    ]);
+
+    special.value = '0';
+    special.disabled = true;
+
+}
+
+  /* ================= Drum Spec ================= */
+
+  function getText(id){
+
+      let el = document.getElementById(id);
+
+      if(!el || !el.value) return '';
+
+      return el.options[el.selectedIndex].text;
+
+  }
+
+  let baseText   = getText('S0');
+  let seriesText = getText('C0');
+  let typeText   = getText('C1');
+  let bungText   = getText('B0');
+
+  let shipText =
+    (s === 'SLQC')
+    ? 'None'
+    : (skip ? 'N/A' : getText('C2'));
+
+  let chemText = getText('O0');
+
+  let line1 =
+    baseText
+      ? `Base package - <b>${baseText}</b>`
+      : '';
+
+  let line2 =
+    (seriesText || typeText)
+      ? `Drum insert - <b>${seriesText}${typeText ? ' + ' + typeText : ''}</b>`
+      : '';
+
+  let line3 =
+    chemText
+      ? `Keycode - <b>${chemText}</b>`
+      : '';
+
+  let line4 =
+    (bungText || shipText)
+      ? `O-ring for bung - <b>${bungText}</b><br>O-ring for DI shipping cap - <b>${shipText}</b>`
+      : '';
+
+  document.getElementById("drumSpec").innerHTML =
+    [line1,line2,line3,line4]
+      .filter(x=>x)
+      .join("<br>");
+
+/* ================= PN ================= */
+
+let B = getSectionB();
+let C = getSectionC();
+
+let keyCode =
+    (s === 'NONE' || s === 'SLQC')
+    ? '00'
+    : val('O0');
+
+let specialCode =
+    skip ? '0' : val('O1');
+
+let shippingCode =
+    skip ? '0' : shipCap.value;
+
+/* 特殊規則：
+   QCIII no serial tag + vented shipping cap
+   36 -> 31
+*/
+
+if(
+    specialCode === '3' &&
+    shippingCode === '6'
+){
+    shippingCode = '1';
+}
+
+let manufacturingCode =
+    val('O3');
+
+let assemblyCode =
+    val('O4');
+
+let parts = [
+
+    val('S0'),            // 2碼
+
+    B,                    // 1碼
+
+    C,                    // 2碼
+
+    keyCode,              // 2碼
+
+    specialCode,          // 1碼
+
+    shippingCode,         // 1碼
+
+    manufacturingCode,    // 1碼
+
+    assemblyCode          // 1碼
+
+];
+
+/* 檢查是否有空值 */
+
+let missingField =
+    parts.some(
+        p => p === null ||
+             p === undefined ||
+             p === ''
+    );
+
+let pn = '';
+
+if(!missingField){
+
+    pn = parts.join('');
+
+}
+
+document.getElementById("output").innerText =
+    pn || "-";
+
+  /* ================= Tool ================= */
+
+  let seriesVal =
+      document.getElementById('C0')?.value || 'NONE';
+
+  document.getElementById("toolSpec").innerHTML =
+      toolMap[seriesVal]
+      ? `Assembly tool - <br><b>${toolMap[seriesVal]}</b>`
+      : '';
+
+/* ================= Status ================= */
+
+let status =
+    document.getElementById("status");
+
+if(missingField){
+
+    status.innerText =
+      "⚠ Please complete all required selections";
+
+    status.className =
+      "status warn";
+}
+
+/* QCII / QCIII 禁止使用 00 */
+
+else if(
+    (s === 'QCII' || s === 'QCIII') &&
+    keyCode === '00'
+){
+
+    status.innerText =
+      "⚠ QCII/QCIII cannot use 00-N/A keycode";
+
+    status.className =
+      "status warn";
+}
+
+/* PN 長度驗證 */
+
+else if(pn.length !== 11){
+
+    status.innerText =
+      `⚠ Invalid Part Number Length (${pn.length}/11)`;
+
+    status.className =
+      "status warn";
+}
+
+else if(pn.includes('XX')){
+
+    status.innerText =
+      "⚠ Contact Entegris required";
+
+    status.className =
+      "status warn";
+}
+
+else{
+
+    status.innerText =
+      "✔ Valid configuration";
+
+    status.className =
+      "status valid";
+}
+
+
+}
+
+document.addEventListener("change", update);
+
+function copyPN(){
+  if(document.getElementById("status").className.includes("warn")){
+    alert("Please complete selections first");
+    return;
+  }
+let t=document.getElementById("output").innerText;
+navigator.clipboard.writeText(t);
+alert("Copied: "+t);
+}
+
+
+render();
+document.getElementById('O3').value = '0';
+document.getElementById('O4').value = '0';
+
+update();
+
+</script>
+
+</body>
+</html>
